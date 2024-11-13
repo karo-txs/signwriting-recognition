@@ -1,0 +1,11 @@
+tensorflow==2.15.0
+mediapipe
+keras-tuner
+numpy==1.24
+pandas
+sphinx
+toml
+pyyaml
+opencv-python
+scikit-learn
+tqdm
