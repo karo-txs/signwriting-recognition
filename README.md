@@ -1,4 +1,4 @@
-# SignWriting for Gesture Recognition in Sign Language
+# SignWriting for Handshape Recognition in Sign Language
 
 ## Overview
 
