@@ -1,0 +1,2 @@
+from core.train.steps.build_model.models.fully_connected_embedder import FullyConnectedEmbedderModel
+from core.train.steps.build_model.models.fully_connected import FullyConnectedModel
