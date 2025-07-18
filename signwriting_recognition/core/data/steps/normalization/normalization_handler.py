@@ -1,8 +1,8 @@
 from core.data.steps.normalization.normalization_function import (
     dataset_landmark_normalization,
 )
+from core.pipeline import DataPipeline
 from core.dtype import AbstractHandler
-from core.domain import DataPipeline
 from dataclasses import dataclass
 import logging
 
@@ -11,11 +11,11 @@ import logging
 class NormalizationHandler(AbstractHandler):
 
     def validate(self, request: DataPipeline) -> bool:
-        for step in request.steps:
-            if step.get("name") == "normalization":
-                return True
-
-        return False
+        step_cfg = next(
+            (s for s in request.steps if s.get("name") == "normalization"), None
+        )
+        if not step_cfg:
+            return False
 
     def handle(self, request: DataPipeline) -> DataPipeline:
         if self.validate(request):

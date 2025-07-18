@@ -1,6 +1,6 @@
 from core.data.steps.augmentation.augmentation_function import landmark_augmentation
 from core.dtype import AbstractHandler
-from core.domain import DataPipeline
+from core.pipeline import DataPipeline
 from dataclasses import dataclass
 import logging
 

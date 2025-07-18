@@ -1,6 +1,6 @@
-from core.train.steps.prepare_datasets.prepare_datasets_function import prepare_dataset
+from core.train.steps.prepare_datasets.prepare_datasets_function_v2 import prepare_dataset
+from core.pipeline import TrainPipeline
 from core.dtype import AbstractHandler
-from core.domain import TrainPipeline
 from dataclasses import dataclass
 import logging
 import os
@@ -14,7 +14,7 @@ class PrepareDatasetsHandler(AbstractHandler):
             request.train_dataset_paths is not None
             and request.val_dataset_paths is not None
             and request.test_dataset_paths is not None
-            and not os.path.isfile(f"{request.experiment_path}/datasets/train.tfrecord")
+            and not os.path.isdir(f"{request.experiment_path}/datasets/split/train/")
         )
 
     def handle(self, request: TrainPipeline) -> TrainPipeline:

@@ -1,15 +1,18 @@
 from interface.dataset import Dataset
 from dataclasses import dataclass
 
+
 @dataclass
 class ASLFingerSpelling(Dataset):
-    
+
     name: str = "ASLFingerSpelling"
-    
+
     def download(self):
-        self.download_from_url("http://www.cvssp.org/FingerSpellingKinect2011/fingerspelling5.tar.bz2")
+        self.download_from_url(
+            "http://www.cvssp.org/FingerSpellingKinect2011/fingerspelling5.tar.bz2"
+        )
         return self
-    
+
     def get_mapper(self):
         return {
             "a": "S1f8",
@@ -37,15 +40,32 @@ class ASLFingerSpelling(Dataset):
             "x": "S10a",
             "y": "S19a",
         }
-    
+
     def map_classes(self):
-        self.map_classes_to_sign_writing_format(source_dir=f'{self.get_base_path()}/{self.name}/original/file/dataset5/A',
-                                                target_dir=f'{self.get_base_path()}/{self.name}/sw-classified/test')
-        self.map_classes_to_sign_writing_format(source_dir=f'{self.get_base_path()}/{self.name}/original/file/dataset5/B',
-                                                target_dir=f'{self.get_base_path()}/{self.name}/sw-classified/test')
-        self.map_classes_to_sign_writing_format(source_dir=f'{self.get_base_path()}/{self.name}/original/file/dataset5/C',
-                                                target_dir=f'{self.get_base_path()}/{self.name}/sw-classified/test')
-        self.map_classes_to_sign_writing_format(source_dir=f'{self.get_base_path()}/{self.name}/original/file/dataset5/D',
-                                                target_dir=f'{self.get_base_path()}/{self.name}/sw-classified/test')
-        self.map_classes_to_sign_writing_format(source_dir=f'{self.get_base_path()}/{self.name}/original/file/dataset5/E',
-                                                target_dir=f'{self.get_base_path()}/{self.name}/sw-classified/test')
+        # TODO: é necessario extrair manualmente
+
+        self.map_classes_to_sign_writing_format(
+            source_dir=f"{self.get_base_path()}/{self.name}/original/file/dataset5/A",
+            target_dir=f"{self.get_base_path()}/{self.name}/sw-classified/test",
+            exclude_prefix="depth",
+        )
+        self.map_classes_to_sign_writing_format(
+            source_dir=f"{self.get_base_path()}/{self.name}/original/file/dataset5/B",
+            target_dir=f"{self.get_base_path()}/{self.name}/sw-classified/test",
+            exclude_prefix="depth",
+        )
+        self.map_classes_to_sign_writing_format(
+            source_dir=f"{self.get_base_path()}/{self.name}/original/file/dataset5/C",
+            target_dir=f"{self.get_base_path()}/{self.name}/sw-classified/test",
+            exclude_prefix="depth",
+        )
+        self.map_classes_to_sign_writing_format(
+            source_dir=f"{self.get_base_path()}/{self.name}/original/file/dataset5/D",
+            target_dir=f"{self.get_base_path()}/{self.name}/sw-classified/test",
+            exclude_prefix="depth",
+        )
+        self.map_classes_to_sign_writing_format(
+            source_dir=f"{self.get_base_path()}/{self.name}/original/file/dataset5/E",
+            target_dir=f"{self.get_base_path()}/{self.name}/sw-classified/test",
+            exclude_prefix="depth",
+        )

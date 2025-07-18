@@ -11,3 +11,7 @@ class Model(ABC):
     @abstractmethod
     def build_from_dict(self, params: dict, len_unique_classes: int):
         pass
+    
+    @abstractmethod
+    def summary(self):
+        pass

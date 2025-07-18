@@ -1,4 +1,4 @@
-tensorflow>=2.16
+tensorflow==2.15.0
 mediapipe
 keras-tuner
 numpy==1.24
@@ -9,3 +9,4 @@ pyyaml
 opencv-python
 scikit-learn
 tqdm
+click

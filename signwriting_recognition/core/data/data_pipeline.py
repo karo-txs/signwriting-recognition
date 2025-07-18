@@ -1,4 +1,4 @@
-from core.domain import DataPipeline
+from core.pipeline import DataPipeline
 from core.data.steps import (
     LandmarkDetectionHandler,
     CreateTensorFlowDatasetHandler,
@@ -10,7 +10,7 @@ from core.data.steps import (
 import logging
 
 
-def run_signwriting_data_pipeline(data_pipeline_config: DataPipeline) -> DataPipeline:
+def run_data_pipeline(data_pipeline_config: DataPipeline) -> DataPipeline:
 
     logging.info(f"Processing: {data_pipeline_config.original_path}")
     base_pipeline = LandmarkDetectionHandler()

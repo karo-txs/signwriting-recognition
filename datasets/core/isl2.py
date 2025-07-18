@@ -42,6 +42,8 @@ class ISL2(Dataset):
         }
     
     def map_classes(self):
+        # TODO: É necessario extrair manualmente
+        
         self.map_classes_to_sign_writing_format(source_dir=f'{self.get_base_path()}/{self.name}/original/ISL Hand Gesture Dataset/ISL custom Data/ISL custom Data',
                                                                 target_dir=f'{self.get_base_path()}/{self.name}/sw-classified/test')
         

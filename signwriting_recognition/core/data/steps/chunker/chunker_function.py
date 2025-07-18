@@ -69,19 +69,3 @@ def save_concatenated_chunk_dataset(save_path, dataset_name):
     )
 
     shutil.rmtree(f"{save_path}/chunks")
-
-
-def save_data_info(save_path, dataset_name, dtype=str):
-    dataset_path = (f"{save_path}/{dataset_name}.tfrecord",)
-    dataset = read_tfrecord(
-        [dataset_path], read_map_fn_with_str_label, embedding_size=127
-    )
-    count_classes = count_sample_per_class(dataset, dtype=dtype)
-
-    data_info = {"total_samples": sum(count_classes.values()), "classes": count_classes}
-
-    json_path = os.path.join(save_path, f"info.json")
-    with open(json_path, "w") as json_file:
-        json.dump(data_info, json_file, indent=4)
-
-    return json_path

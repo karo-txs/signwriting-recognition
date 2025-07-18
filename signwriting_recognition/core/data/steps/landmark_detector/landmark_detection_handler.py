@@ -1,56 +1,79 @@
-from core.data.steps.landmark_detector.mediapipe_landmark_detector import Mediapipe
-from core.utils.performance_functions import measure_time
+from core.data.steps.landmark_detector.mediapipe_landmark_detector import (
+    MediapipeHandDetector,
+)
+from core.data.interfaces.hand_landmark_detector import HandLandmarkDetector
 from core.utils.dict_functions import add_to_dict
+from dataclasses import dataclass, field
 from core.dtype import AbstractHandler
-from core.domain import DataPipeline
-from dataclasses import dataclass
+from core.pipeline import DataPipeline
+from collections import defaultdict
+from typing import Dict, List
+from pathlib import Path
 import logging
 
 
 @dataclass
 class LandmarkDetectionHandler(AbstractHandler):
+    """
+    Executa detecção de marcos da mão no passo 'landmark-detector'.
+
+    ▸ O detector é criado uma única vez (lazy-singleton).
+    ▸ Suporte opcional a GPU (`use_gpu=True`) passado via step.
+    """
+
+    _detector: HandLandmarkDetector | None = field(init=False, default=None, repr=False)
+    _model_name: str = field(init=False, default="mediapipe", repr=False)
+
+    def _build_detector(self, use_gpu: bool = False) -> None:
+        """Instancia o detector de forma preguiçosa."""
+        if self._detector is None:
+            self._detector = MediapipeHandDetector(use_gpu=use_gpu)
 
     def validate(self, request: DataPipeline) -> bool:
-        for step in request.steps:
-            if step.get("name") == "landmark-detector":
-                self.model = step.get("model", "mediapipe")
-                if self.model == "mediapipe":
-                    self.hand_landmark_detector = Mediapipe()
-                else:
-                    return False
-                return True
-        return False
+        step_cfg = next(
+            (s for s in request.steps if s.get("name") == "landmark-detector"), None
+        )
+        if not step_cfg:
+            return False
 
-    @measure_time
+        self._model_name = step_cfg.get("model", "mediapipe")
+        if self._model_name != "mediapipe":
+            logging.error("Modelo '%s' não suportado.", self._model_name)
+            return False
+
+        self._build_detector(step_cfg.get("use_gpu", False))
+        return True
+
     def handle(self, request: DataPipeline) -> DataPipeline:
-        if self.validate(request):
-            logging.info(
-                f"DataPipeline: Run Hand Landmark Detection - model = {self.model}"
+        if not self.validate(request):
+            return super().handle(request)
+
+        logging.info(
+            "DataPipeline: Run Hand Landmark Detection - model = %s", self._model_name
+        )
+
+        out_dir = Path(request.target_path) / "intermediate" / "2_landmark_detector"
+        request.last_intermediate_step_path = str(out_dir)
+
+        hand_labels: List[str] = []
+        landmark_dict: Dict[str, List] = defaultdict(list)
+
+        for img_path, label in request.last_intermediate_step_data.items():
+            result = self._detector.detect_hand(
+                image_path=img_path,
+                label=label,
+                save_dir=out_dir,
+                save_landmark_image=request.save_intermediate_steps,
             )
-            hand_data_labels = []
-            landmark_dict = {}
 
-            request.last_intermediate_step_path = (
-                f"{request.target_path}/intermediate/2_landmark_detector"
-            )
+            if not result:
+                continue
 
-            for image_path in request.last_intermediate_step_data.keys():
-                landmarks = self.hand_landmark_detector.detect_from_chunks(
-                    image_path=image_path,
-                    label=request.last_intermediate_step_data[image_path],
-                    save_path=request.last_intermediate_step_path,
-                    save_landmark_image=request.save_intermediate_steps,
-                )
+            hand_labels.append(label)
+            add_to_dict(landmark_dict, result)
 
-                if landmarks:
-                    hand_data_labels.append(
-                        request.last_intermediate_step_data[image_path]
-                    )
-                    add_to_dict(landmark_dict, landmarks)
-
-            request.last_intermediate_step_data = {
-                "hand_data_labels": hand_data_labels,
-                "landmark_dict": landmark_dict,
-            }
-
+        request.last_intermediate_step_data = {
+            "hand_data_labels": hand_labels,
+            "landmark_dict": dict(landmark_dict),
+        }
         return super().handle(request)

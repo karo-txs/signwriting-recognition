@@ -1,5 +1,6 @@
 from core.utils.tf_data_functions import (
     convert_labels_to_int,
+    create_concatenated_dataset_from_folder,
     filter_dataset_by_str_classes,
     read_map_fn_with_str_label,
     read_tfrecord,
@@ -23,7 +24,7 @@ def prepare_dataset(
 
     for dataset_path in datasets_path:
         path = dataset_path.get("path")
-        dataset = read_tfrecord([path], read_map_fn_with_str_label, embedding_size=127)
+        dataset = create_concatenated_dataset_from_folder(path, read_map_fn_with_str_label)
         tf_datasets.append(dataset)
 
     dataset = concatenate_datasets(tf_datasets)

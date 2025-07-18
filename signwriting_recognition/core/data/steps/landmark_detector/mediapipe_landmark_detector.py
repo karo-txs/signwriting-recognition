@@ -1,91 +1,83 @@
 from core.data.interfaces.hand_landmark_detector import HandLandmarkDetector
 from core.utils.landmark_functions import draw_landmarks_on_image
 from core.utils.path_functions import get_internal_asset
-from mediapipe.tasks import python
-import mediapipe as mp
+from mediapipe.tasks.python import vision as mp_vision
+from core.utils.image_functions import load_rgb
+from mediapipe.tasks import python as mp_tasks
+from dataclasses import dataclass, field
+from pathlib import Path
 
 
+@dataclass(slots=True)
+class MediapipeHandDetector(HandLandmarkDetector):
+    """
+    Empacota a API de tarefas do Mediapipe num objeto reutilizável.
 
-class Mediapipe(HandLandmarkDetector):
+    ▸ A criação de `create_from_options` é custosa; por isso, o detector
+      é inicializado uma única vez e mantido na instância.
+    """
 
-    def __init__(self):
-        base_options = python.BaseOptions(
-            model_asset_path=get_internal_asset("hand_landmarker.task")
+    num_hands: int = 2
+    model_path: Path = field(
+        default_factory=lambda: Path(get_internal_asset("hand_landmarker.task"))
+    )
+
+    def __post_init__(self) -> None:
+        base = mp_tasks.BaseOptions(
+            model_asset_path=str(self.model_path),
+            delegate=(
+                mp_tasks.BaseOptions.Delegate.GPU
+                if self.use_gpu
+                else mp_tasks.BaseOptions.Delegate.CPU
+            ),
         )
-        options = python.vision.HandLandmarkerOptions(
-            base_options=base_options, num_hands=2
+        opts = mp_vision.HandLandmarkerOptions(
+            base_options=base, num_hands=self.num_hands
         )
-        self.detector = python.vision.HandLandmarker.create_from_options(options)
+        self._detector = mp_vision.HandLandmarker.create_from_options(opts)
 
-    def _find_highest_hand(self, detection_result):
-        """
-        The function `_find_highest_hand` returns the index of the hand with the highest wrist position in a
-        given detection result.
-        """
-        min_y = float("inf")
-        highest_hand_index = -1
-
-        for i, hand_landmarks in enumerate(detection_result.hand_landmarks):
-            wrist_y = hand_landmarks[0].y
-            if wrist_y < min_y:
-                min_y = wrist_y
-                highest_hand_index = i
-
-        return highest_hand_index
-
-    def detect_from_chunks(
+    def detect_hand(
         self,
-        image_path: str,
+        image_path: str | Path,
         label: str,
-        save_path: str,
+        save_dir: str | Path,
         save_landmark_image: bool = True,
-    ):
+    ) -> dict | None:
         """
-        The function `get_highest_hand_landmark_data_from_path` processes an image to detect hand landmarks,
-        retrieves data for the highest detected hand, and optionally saves a visual representation of the
-        landmarks.
+        Analisa a imagem, devolvendo apenas a mão “mais alta” (menor Y
+        do punho) — útil para bases de dados onde há sobreposição.
+
+        Retorna None quando nenhuma mão é detectada.
         """
-        file_name = image_path.split("/")[-1]
-        save_landmark_path = f"{save_path}/{label}/{file_name}"
+        image_path = Path(image_path)
 
-        mp_image = mp.Image.create_from_file(image_path)
-        detection_result = self.detector.detect(mp_image)
+        mp_image = load_rgb(image_path)
+        result = self._detector.detect(mp_image)
 
-        if (
-            detection_result.handedness is not None
-            and len(detection_result.handedness) > 0
-        ):
-            selected_hand_index = self._find_highest_hand(detection_result)
-
-            hand_landmarks = [
-                [landmark.x, landmark.y, landmark.z]
-                for landmark in detection_result.hand_landmarks[selected_hand_index]
-            ]
-            handedness_scores = [
-                h.score for h in detection_result.handedness[selected_hand_index]
-            ]
-            handedness_name = [
-                h.category_name
-                for h in detection_result.handedness[selected_hand_index]
-            ]
-            hand_world_landmarks = [
-                [hand_landmark.x, hand_landmark.y, hand_landmark.z]
-                for hand_landmark in detection_result.hand_world_landmarks[
-                    selected_hand_index
-                ]
-            ]
-
-            if save_landmark_image:
-                draw_landmarks_on_image(
-                    [detection_result.hand_landmarks[selected_hand_index]],
-                    save_landmark_path,
-                )
-
-            return {
-                "hand_landmark": hand_landmarks,
-                "handedness": handedness_scores,
-                "handedness_name": handedness_name,
-                "world_hand": hand_world_landmarks,
-            }
-        else:
+        if not result.hand_landmarks:
             return None
+
+        idx = self._highest_hand_index(result)
+        lm = result.hand_landmarks[idx]
+        lm_world = result.hand_world_landmarks[idx]
+        handedness = result.handedness[idx]
+
+        if save_landmark_image:
+            save_dir = Path(save_dir) / label
+            save_dir.mkdir(parents=True, exist_ok=True)
+            draw_landmarks_on_image([lm], save_dir / image_path.name)
+
+        return {
+            "hand_landmark": [[p.x, p.y, p.z] for p in lm],
+            "handedness": [h.score for h in handedness],
+            "handedness_name": [h.category_name for h in handedness],
+            "world_hand": [[p.x, p.y, p.z] for p in lm_world],
+        }
+
+    @staticmethod
+    def _highest_hand_index(result: mp_vision.HandLandmarkerResult) -> int:
+        """Índice da mão cujo pulso (landmark 0) tem menor coordenada y."""
+        return min(
+            range(len(result.hand_landmarks)),
+            key=lambda i: result.hand_landmarks[i][0].y,
+        )

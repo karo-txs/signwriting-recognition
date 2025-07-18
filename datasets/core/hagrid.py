@@ -13,21 +13,26 @@ class Hagrid(Dataset):
     def get_mapper(self):
         return {
             "rock": "S1a0",
-            "Gesture_1": "S1ce",
-            "Gesture_2": "S1f5",
-            "Gesture_3": "S10e",
-            "Gesture_4": "S11e",
-            "Gesture_5": "S14c",
-            "Gesture_6": "S15a",
-            "Gesture_7": "S19a",
-            "Gesture_8": "S100",
-            "Gesture_9": "S115",
-            "Gesture_10": "S144",
-            "Gesture_11": "S186",
-            "Gesture_12": "S203",
+            "ok": "S1ce",
+            "dislike": "S1f5",
+            "like": "S1f5",
+            "peace": "S10e",
+            "peace_inverted": "S10e",
+            "three2": "S11e",
+            "palm": "S14c",
+            "stop": "S15a",
+            "stop_inverted": "S15a",
+            "call": "S19a",
+            "mute": "S100",
+            "one": "S100",
+            "two_up": "S115",
+            "two_up_inverted": "S115",
+            "four": "S144",
+            "three": "S186",
+            "fist": "S203",
         }
     
     def map_classes(self):
-        self.map_classes_to_sign_writing_format(source_dir=f'{self.get_base_path()}/{self.name}/original/HG14/HG14-Hand Gesture', 
-                                                target_dir=f'{self.get_base_path()}/{self.name}/sw-classified/test')
+        self.map_classes_to_sign_writing_format(source_dir=f'{self.get_base_path()}/{self.name}/original/hagrid-classification-512p/hagrid-classification-512p', 
+                                                target_dir=f'{self.get_base_path()}/{self.name}/sw-classified/train')
         

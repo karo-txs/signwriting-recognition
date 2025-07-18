@@ -78,11 +78,14 @@ class TrainPipeline:
     
 @dataclass
 class EvaluationPipeline:
-    methods: List[str]
+    experiment_path: str
+    test_dataset: Any = field(default=None)
+    models: List[Any] = field(default=None)
+    len_unique_classes: int = field(default=None)
 
 @dataclass
 class Config:
     landmark_detector: str
     data_pipelines: List[DataPipeline] = field(default_factory=list)
     train_pipeline: List[TrainPipeline] = field(default_factory=list)
-    evaluation_pipeline: EvaluationPipeline = None
+    evaluation_pipeline: List[EvaluationPipeline] = field(default_factory=list)

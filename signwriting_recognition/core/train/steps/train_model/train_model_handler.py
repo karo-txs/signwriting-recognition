@@ -1,6 +1,6 @@
 from core.train.steps.train_model.train_model_function import get_trainer_model
+from core.pipeline import TrainPipeline
 from core.dtype import AbstractHandler
-from core.domain import TrainPipeline
 from dataclasses import dataclass
 import logging
 

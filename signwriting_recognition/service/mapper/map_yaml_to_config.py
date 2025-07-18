@@ -1,4 +1,4 @@
-from core.domain import Config, DataPipeline, EvaluationPipeline, TrainPipeline
+from core.pipeline import Config, DataPipeline, EvaluationPipeline, TrainPipeline
 from typing import Any, Dict
 
 
@@ -41,16 +41,22 @@ def parse_config(raw_config: Dict[str, Any]) -> Config:
                 test_dataset_paths=params.get("test_dataset"),
                 models_params=params.get("models"),
                 experiment_path=params.get("experiment_path"),
-                label_names=params.get("label_names")
+                label_names=params.get("label_names"),
             )
         )
 
-    raw_eval = raw_config.get("evaluation_pipeline", {})
-    evaluation_pipeline = EvaluationPipeline(methods=raw_eval.get("methods", []))
+    raw_eval_pipeline = ensure_list(raw_config.get("eval_pipeline"))
+    eval_pipelines = []
+    for params in raw_eval_pipeline:
+        eval_pipelines.append(
+            EvaluationPipeline(
+                experiment_path=params.get("experiment_path"),
+            )
+        )
 
     return Config(
         landmark_detector=landmark_detector,
         data_pipelines=data_pipelines,
         train_pipeline=train_pipelines,
-        evaluation_pipeline=evaluation_pipeline,
+        evaluation_pipeline=eval_pipelines,
     )

@@ -1,23 +1,32 @@
-from core.data.data_pipeline import run_signwriting_data_pipeline
-from service.mapper.map_yaml_to_config import parse_config
-from core.train.train_pipeline import run_train_pipeline
-from core.dtype import MultiConstructLoader
-from core.domain import DataPipeline
+import os, warnings
+
+os.environ["GLOG_minloglevel"] = "3"
+os.environ["ABSL_MIN_LOG_LEVEL"] = "2"
+os.environ["GRPC_VERBOSITY"] = "ERROR"
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
+
+import logging, click, yaml
 from typing import Any, Dict
-import logging
-import yaml
-import os
 
-
+from core.dtype import MultiConstructLoader
 
 yaml.SafeLoader.add_constructor(
     yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
     MultiConstructLoader.construct_mapping,
 )
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
+
+import tensorflow as tf
+import mediapipe as mp
+
+from service.mapper.map_yaml_to_config import parse_config
+from core.train.train_pipeline import run_train_pipeline
+from core.eval.eval_pipeline import run_eval_pipeline
+from infra.logging.logging_utils import setup_logging
+from core.data.data_pipeline import run_data_pipeline
 
 
 def load_yaml_config(filepath: str) -> Dict[str, Any]:
@@ -25,47 +34,40 @@ def load_yaml_config(filepath: str) -> Dict[str, Any]:
     Carrega o arquivo YAML utilizando o loader customizado que lida com chaves duplicadas.
     """
     if not os.path.exists(filepath):
-        raise FileNotFoundError(f"O arquivo '{filepath}' não foi encontrado.")
-    with open(filepath, "r", encoding="utf-8") as file:
-        config = yaml.load(file, Loader=MultiConstructLoader)
-    return config
+        raise FileNotFoundError(f"Arquivo não encontrado: {filepath}")
+    with open(filepath, "r", encoding="utf-8") as f:
+        return yaml.load(f, Loader=MultiConstructLoader)
 
 
-def process_data_pipeline(pipeline: DataPipeline):
-    print(f"Processando data_pipeline com original_path: {pipeline.original_path}")
-    for step in pipeline.steps:
-        for step_name, params in step.items():
-            print(f"  Etapa: {step_name} com parâmetros: {params}")
+@click.command()
+@click.option("--config-path", default="../experiments/configs/data_pipeline.yaml")
+def main(config_path):
 
+    raw_cfg = load_yaml_config(config_path)
+    cfg = parse_config(raw_cfg)
 
-def main():
-    #Caminho para o arquivo YAML; ajuste conforme necessário
-    config_path = "../sw-experiments/configs/data_pipeline.yaml"
+    setup_logging()
 
-    try:
-        raw_config = load_yaml_config(config_path)
-    except Exception as e:
-        print(f"Erro ao carregar o arquivo de configuração: {e}")
-        return
+    logger = logging.getLogger(__name__)
+    logger.info("Config carregada com sucesso.")
 
-    config = parse_config(raw_config)
+    for pipe_cfg in cfg.data_pipelines:
+        logger.info(f"DataPipeline: {pipe_cfg.original_path}")
+        run_data_pipeline(pipe_cfg)
 
-    for data_pipeline_config in config.data_pipelines:
-        run_signwriting_data_pipeline(data_pipeline_config)
-    
-    
-    # config_path = "../sw-experiments/configs/train_pipeline.yaml"
+    for pipe_cfg in cfg.train_pipeline:
+        setup_logging(experiment_path=pipe_cfg.experiment_path)
 
-    # try:
-    #     raw_config = load_yaml_config(config_path)
-    # except Exception as e:
-    #     print(f"Erro ao carregar o arquivo de configuração: {e}")
-    #     return
+        name = pipe_cfg.experiment_path.split("/")[-1]
 
-    # config = parse_config(raw_config)
+        tlogger = logging.getLogger(f"train.{name}")
+        tlogger.info(f"TrainPipeline: {name}")
 
-    # for train_pipeline_config in config.train_pipeline:
-    #     run_train_pipeline(train_pipeline_config)
+        run_train_pipeline(pipe_cfg)
+
+    for pipe_cfg in cfg.evaluation_pipeline:
+        logger.info(f"EvalPipeline: {pipe_cfg.experiment_path}")
+        run_eval_pipeline(pipe_cfg)
 
 
 if __name__ == "__main__":

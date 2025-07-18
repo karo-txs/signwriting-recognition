@@ -2,7 +2,7 @@ from core.data.steps.create_tf_dataset.create_tensorflow_dataset_function import
     create_dataset_from_dict,
 )
 from core.dtype import AbstractHandler
-from core.domain import DataPipeline
+from core.pipeline import DataPipeline
 from dataclasses import dataclass
 import logging
 

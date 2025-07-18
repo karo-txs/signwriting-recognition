@@ -14,4 +14,5 @@ def build_model(model_params: dict, len_unique_classes: int, models_path: str):
 
     if model:
         model.build_from_dict(model_params, len_unique_classes)
+        model.summary()
     return model

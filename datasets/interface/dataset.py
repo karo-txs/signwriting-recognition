@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
+from typing import Optional
 from tqdm import tqdm
 import requests
 import zipfile
@@ -31,9 +32,10 @@ class Dataset(ABC):
             data_name (str): The Kaggle dataset identifier in the format 'user/dataset-name'.
         """
         dataset_path = f"{self.get_base_path()}/{self.name}/original"
-        print("Baixando dataset do kaggle, esse processo pode demorar algums minutos.")
-        os.makedirs(dataset_path, exist_ok=True)
-        kaggle.api.dataset_download_files(data_name, path=dataset_path, unzip=True, quiet=False)
+        if not os.path.isdir(dataset_path):
+            print("Baixando dataset do kaggle, esse processo pode demorar algums minutos.")
+            os.makedirs(dataset_path, exist_ok=True)
+            kaggle.api.dataset_download_files(data_name, path=dataset_path, unzip=True, quiet=False)
 
     def download_from_url(self, url: str, ignore_exists=False):
         """
@@ -86,7 +88,7 @@ class Dataset(ABC):
         """Abstract method to map dataset classes. Should be implemented in the subclass."""
         pass
 
-    def map_classes_to_sign_writing_format(self, source_dir: str, target_dir: str):
+    def map_classes_to_sign_writing_format(self, source_dir: str, target_dir: str, exclude_prefix: Optional[str] = None,):
         """
         Maps dataset classes to the SignWriting format by copying files from the source directory to the target directory.
 
@@ -107,6 +109,9 @@ class Dataset(ABC):
             old_path = os.path.join(source_dir, old_name)
             if os.path.exists(old_path):
                 for file_name in os.listdir(old_path):
+                    if exclude_prefix and file_name.startswith(exclude_prefix):
+                        continue
+            
                     old_file_path = os.path.join(old_path, file_name)
                     new_file_path = os.path.join(target_path, file_name)
                     shutil.copy2(old_file_path, new_file_path)

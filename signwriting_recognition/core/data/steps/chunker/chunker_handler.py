@@ -1,21 +1,27 @@
-from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
-import copy
-import os
 from core.data.steps.chunker.chunker_function import (
     load_chunk_data,
     save_chunk_dataset,
 )
+from core.utils.tf_data_functions import (
+    create_concatenated_dataset_from_folder,
+    read_map_fn_with_str_label,
+)
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from core.utils.counter_functions import count_sample_per_class
 from core.dtype import AbstractHandler
-from core.domain import DataPipeline
+from core.pipeline import DataPipeline
 from dataclasses import dataclass
 import logging
+import json
+import copy
+import os
 
 
 @dataclass
 class ChunkerHandler(AbstractHandler):
 
     data_process: AbstractHandler
-    CHUNK_SIZE = 500
+    CHUNK_SIZE = 3000
 
     def validate(self, request: DataPipeline) -> bool:
         for step in request.steps:
@@ -61,4 +67,30 @@ class ChunkerHandler(AbstractHandler):
             for fut in as_completed(futures):
                 logging.info(fut.result())
 
+        self.save_data_info(
+            dataset_path=f"{base_req.target_path}/{base_req.dataset_name}",
+            dtype=str,
+        )
+
         return super().handle(request)
+
+    def save_data_info(self, dataset_path, dtype=str):
+        json_path = os.path.join(dataset_path, "info.json")
+        if os.path.exists(json_path):
+            with open(json_path, "r") as f:
+                data_info = json.load(f)
+        else:
+            data_info = {"total_samples": 0, "classes": {}}
+
+        dataset = create_concatenated_dataset_from_folder(
+            folder_path=dataset_path, read_map_fn=read_map_fn_with_str_label
+        )
+        count_classes = count_sample_per_class(dataset, dtype=dtype)
+
+        for cls, n in count_classes.items():
+            data_info["classes"][cls] = data_info["classes"].get(cls, 0) + n
+        data_info["total_samples"] = sum(data_info["classes"].values())
+
+        with open(json_path, "w") as f:
+            json.dump(data_info, f, indent=4)
+        return json_path
