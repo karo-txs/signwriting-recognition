@@ -1,4 +1,4 @@
-from core.data.steps.augmentation.augmentation_function import landmark_augmentation
+from core.data.steps.augmentation.augmentation_function_v3 import landmark_augmentation
 from core.dtype import AbstractHandler
 from core.pipeline import DataPipeline
 from dataclasses import dataclass

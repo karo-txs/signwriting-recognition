@@ -4,7 +4,7 @@ from core.data.steps import (
     CreateTensorFlowDatasetHandler,
     NormalizationHandler,
     SamplerHandler,
-    ChunkerHandler,
+    SaveDatasetHandler,
     AugmentationHandler,
 )
 import logging
@@ -13,14 +13,11 @@ import logging
 def run_data_pipeline(data_pipeline_config: DataPipeline) -> DataPipeline:
 
     logging.info(f"Processing: {data_pipeline_config.original_path}")
-    base_pipeline = LandmarkDetectionHandler()
-    base_pipeline.set_next(CreateTensorFlowDatasetHandler()).set_next(
+    base_pipeline = SamplerHandler()
+    base_pipeline.set_next(LandmarkDetectionHandler()).set_next(CreateTensorFlowDatasetHandler()).set_next(
         NormalizationHandler()
-    ).set_next(AugmentationHandler())
+    ).set_next(AugmentationHandler()).set_next(SaveDatasetHandler())
 
-    initial_step = SamplerHandler()
-    initial_step.set_next(ChunkerHandler(base_pipeline))
-
-    result = initial_step.handle(data_pipeline_config)
+    result = base_pipeline.handle(data_pipeline_config)
 
     return result

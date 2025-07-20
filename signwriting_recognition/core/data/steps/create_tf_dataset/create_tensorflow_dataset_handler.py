@@ -20,9 +20,6 @@ class CreateTensorFlowDatasetHandler(AbstractHandler):
     def handle(self, request: DataPipeline) -> DataPipeline:
         if self.validate(request):
             logging.info(f"DataPipeline: Run Create TensorFlow Dataset")
-            request.last_intermediate_step_path = (
-                f"{request.target_path}/intermediate/1_sampler"
-            )
             request.last_intermediate_step_data = create_dataset_from_dict(
                 request.last_intermediate_step_data.get("landmark_dict"),
                 request.last_intermediate_step_data.get("hand_data_labels"),

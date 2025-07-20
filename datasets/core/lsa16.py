@@ -4,13 +4,17 @@ from dataclasses import dataclass
 
 @dataclass
 class LSA16(Dataset):
-    
+
     name: str = "LSA16"
-    
+
     def download(self):
-        self.download_from_url("https://mega.nz/#!hcgQUCAT!WtTSPTO6GuXIXs1BuRJDGburN4FRHBAs9EzRfbd2ra4")
+        print(
+            "Erro no download: Não é possível fazer o download do dataset hospedado no Mega. \n" + 
+            "Baixe o dataset a partir do link <https://mega.nz/#!hcgQUCAT!WtTSPTO6GuXIXs1BuRJDGburN4FRHBAs9EzRfbd2ra4> \n" + 
+            "e salve na pasta LSA16/original já descompactado"
+        )
         return self
-    
+
     def get_mapper(self):
         return {
             "1_": "S14c",
@@ -30,8 +34,9 @@ class LSA16(Dataset):
             "15_": "S19a",
             "16_": "S10e",
         }
-    
+
     def map_classes(self):
-        self.map_classes_to_sign_writing_format_file_name_based(source_dir=f'{self.get_base_path()}/{self.name}/original/lsa16_raw/lsa16_raw',
-                                                                target_dir=f'{self.get_base_path()}/{self.name}/sw-classified/test')
-        
+        self.map_classes_to_sign_writing_format_file_name_based(
+            source_dir=f"{self.get_base_path()}/{self.name}/original/lsa16_raw/lsa16_raw",
+            target_dir=f"{self.get_base_path()}/{self.name}/sw-classified/test",
+        )

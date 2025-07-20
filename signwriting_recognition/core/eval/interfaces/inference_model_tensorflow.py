@@ -21,10 +21,16 @@ class InferenceModelTensorflow(InferenceModel):
         n_samples, total_time = 0, 0.0
 
         for x, lbl in tqdm(dataset, desc=f"[{self.name}] infer"):
-            if not isinstance(x, tuple) and len(x.shape) == 1:
-                x_in = tf.expand_dims(x, 0)
+            if isinstance(x, dict):
+                x_in = [
+                    tf.expand_dims(x["hand_landmarks_input"], 0),
+                    tf.expand_dims(x["handness_input"], 0),
+                    tf.expand_dims(x["landmarks_word_input"], 0),
+                ]
             elif isinstance(x, tuple):
                 x_in = [tf.expand_dims(t, 0) for t in x]
+            elif len(x.shape) == 1:
+                x_in = tf.expand_dims(x, 0)
             else:
                 x_in = x
 

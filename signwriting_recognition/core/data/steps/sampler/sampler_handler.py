@@ -29,4 +29,5 @@ class SamplerHandler(AbstractHandler):
                     pass
                 
             create_sample(request.original_path, request.last_intermediate_step_path, self.factor)
+            request.original_path = request.last_intermediate_step_path
         return super().handle(request)

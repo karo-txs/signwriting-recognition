@@ -33,9 +33,29 @@ class Dataset(ABC):
         """
         dataset_path = f"{self.get_base_path()}/{self.name}/original"
         if not os.path.isdir(dataset_path):
-            print("Baixando dataset do kaggle, esse processo pode demorar algums minutos.")
+            print(
+                "Baixando dataset do kaggle, esse processo pode demorar algums minutos."
+            )
             os.makedirs(dataset_path, exist_ok=True)
-            kaggle.api.dataset_download_files(data_name, path=dataset_path, unzip=True, quiet=False)
+            kaggle.api.dataset_download_files(
+                data_name, path=dataset_path, unzip=True, quiet=False
+            )
+
+    def download_zenodo_record(self, record_id: int, token=None):
+        api_url = f"https://zenodo.org/api/records/{record_id}/files-archive"
+
+        dataset_path = f"{self.get_base_path()}/{self.name}/original"
+        if not os.path.isdir(dataset_path):
+            print(
+                "Baixando dataset do zenodo, esse processo pode demorar algums minutos."
+            )
+            os.makedirs(dataset_path, exist_ok=True)
+
+            with requests.get(api_url, stream=True) as r, open(
+                f"{dataset_path}/dataset.zip", "wb"
+            ) as fp:
+                for chunk in r.iter_content(chunk_size=8192):
+                    fp.write(chunk)
 
     def download_from_url(self, url: str, ignore_exists=False):
         """
@@ -88,7 +108,12 @@ class Dataset(ABC):
         """Abstract method to map dataset classes. Should be implemented in the subclass."""
         pass
 
-    def map_classes_to_sign_writing_format(self, source_dir: str, target_dir: str, exclude_prefix: Optional[str] = None,):
+    def map_classes_to_sign_writing_format(
+        self,
+        source_dir: str,
+        target_dir: str,
+        exclude_prefix: Optional[str] = None,
+    ):
         """
         Maps dataset classes to the SignWriting format by copying files from the source directory to the target directory.
 
@@ -111,7 +136,7 @@ class Dataset(ABC):
                 for file_name in os.listdir(old_path):
                     if exclude_prefix and file_name.startswith(exclude_prefix):
                         continue
-            
+
                     old_file_path = os.path.join(old_path, file_name)
                     new_file_path = os.path.join(target_path, file_name)
                     shutil.copy2(old_file_path, new_file_path)

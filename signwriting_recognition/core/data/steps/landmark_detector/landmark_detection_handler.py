@@ -11,6 +11,8 @@ from typing import Dict, List
 from pathlib import Path
 import logging
 
+from core.utils import path_functions
+
 
 @dataclass
 class LandmarkDetectionHandler(AbstractHandler):
@@ -57,7 +59,15 @@ class LandmarkDetectionHandler(AbstractHandler):
 
         hand_labels: List[str] = []
         landmark_dict: Dict[str, List] = defaultdict(list)
+        
+        file_paths = path_functions.get_all_file_paths(request.original_path)
+        label_names = path_functions.get_all_folder_names(request.original_path)
 
+        relation_file_label = path_functions.get_relation_of_files_per_folder_name(
+            file_paths, label_names, limit_value=None
+        )
+        request.last_intermediate_step_data = relation_file_label
+        
         for img_path, label in request.last_intermediate_step_data.items():
             result = self._detector.detect_hand(
                 image_path=img_path,

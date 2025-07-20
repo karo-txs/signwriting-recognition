@@ -52,8 +52,11 @@ def main(config_path):
     logger.info("Config carregada com sucesso.")
 
     for pipe_cfg in cfg.data_pipelines:
-        logger.info(f"DataPipeline: {pipe_cfg.original_path}")
-        run_data_pipeline(pipe_cfg)
+        try:
+            logger.info(f"DataPipeline: {pipe_cfg.original_path}")
+            run_data_pipeline(pipe_cfg)
+        except:
+            logger.info(f"Error: {pipe_cfg.original_path}")
 
     for pipe_cfg in cfg.train_pipeline:
         setup_logging(experiment_path=pipe_cfg.experiment_path)
@@ -63,11 +66,17 @@ def main(config_path):
         tlogger = logging.getLogger(f"train.{name}")
         tlogger.info(f"TrainPipeline: {name}")
 
-        run_train_pipeline(pipe_cfg)
+        try:
+            run_train_pipeline(pipe_cfg)
+        except:
+            logger.info(f"Error: {pipe_cfg.experiment_path}")
 
     for pipe_cfg in cfg.evaluation_pipeline:
         logger.info(f"EvalPipeline: {pipe_cfg.experiment_path}")
-        run_eval_pipeline(pipe_cfg)
+        try:
+            run_eval_pipeline(pipe_cfg)
+        except:
+            logger.info(f"Error: {pipe_cfg.experiment_path}")
 
 
 if __name__ == "__main__":
