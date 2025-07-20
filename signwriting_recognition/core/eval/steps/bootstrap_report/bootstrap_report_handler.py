@@ -13,31 +13,29 @@ class BootstrapReportHandler(AbstractHandler):
     sample_frac: float = 0.4
     rng_seed: int | None = None
 
-    def validate(self, request: EvaluationPipeline) -> bool:
-        return bool(request.test_dataset) and bool(request.models)
-
     def handle(self, request: EvaluationPipeline) -> EvaluationPipeline:
-        if self.validate(request):
-            logging.info("EvaluationPipeline: Run Bootstrap Report")
+        logging.info("EvaluationPipeline: Run Bootstrap Report")
 
-            for model in request.models:
-                logging.info("EvaluationPipeline: %s (%s)", model.name, model.framework.name)
+        logging.info(
+            "EvaluationPipeline: %s (%s)",
+            request.actual_model.name,
+            request.actual_model.framework.name,
+        )
+        
+        report_dir = (
+            Path(request.eval_path)
+            / request.actual_test_dataset_path.get("name")
+            / request.actual_model_path.get("name")
+            / "bootstrap_report"
+        )
 
-                report_dir = (
-                    Path(request.experiment_path)
-                    / "models"
-                    / model.name
-                    / "reports"
-                    / "bootstrap_report"
-                )
-
-                save_bootstrap_report(
-                    y_true=model.metrics["y_true"],
-                    y_pred=model.metrics["y_pred"],
-                    report_dir=report_dir,
-                    n_iterations=self.n_iterations,
-                    sample_frac=self.sample_frac,
-                    rng_seed=self.rng_seed,
-                )
+        save_bootstrap_report(
+            y_true=request.actual_model.metrics["y_true"],
+            y_pred=request.actual_model.metrics["y_pred"],
+            report_dir=report_dir,
+            n_iterations=self.n_iterations,
+            sample_frac=self.sample_frac,
+            rng_seed=self.rng_seed,
+        )
 
         return super().handle(request)

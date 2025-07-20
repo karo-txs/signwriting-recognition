@@ -2,6 +2,7 @@ from core.eval.interfaces.eval_metrics import EvalMetrics
 from dataclasses import dataclass, field
 from core.utils.enums import Framework
 from typing import Any, Dict
+from pathlib import Path
 import numpy as np
 
 
@@ -10,6 +11,7 @@ class InferenceModel:
     """Contém o objeto modelo e metadados mínimos."""
 
     name: str
+    model_path: Path
     framework: Framework = field(default=None)
     model: Any = field(default=None, repr=False)
     metrics: EvalMetrics = field(default=None)

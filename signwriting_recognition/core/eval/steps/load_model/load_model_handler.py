@@ -8,12 +8,8 @@ import logging
 @dataclass
 class LoadModelHandler(AbstractHandler):
 
-    def validate(self, request: EvaluationPipeline) -> bool:
-        return True
-
     def handle(self, request: EvaluationPipeline) -> EvaluationPipeline:
-        if self.validate(request):
-            logging.info(f"EvaluationPipeline: Run Load Model")
-            request.models = load_models_from_experiment(request.experiment_path)
+        logging.info(f"EvaluationPipeline: Run Load Model")
+        request.actual_model = load_models_from_experiment(request.actual_model_path.get("path"))
 
         return super().handle(request)

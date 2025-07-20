@@ -4,12 +4,16 @@ from dataclasses import dataclass
 from typing import Any, Dict
 from tqdm import tqdm
 import numpy as np
+import joblib
 import time
 
 
 @dataclass
 class InferenceModelSklearn(InferenceModel):
     framework: Framework = Framework.SKLEARN
+
+    def __post_init__(self):
+        self.model = joblib.load(self.model_path)
 
     def predict_dataset(self, dataset) -> Dict[str, Any]:
         """

@@ -6,5 +6,4 @@ env/
 venv/
 
 datasets/assets
-gesture_recognition/configs
-sw-experiments/
+experiments/

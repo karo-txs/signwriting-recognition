@@ -11,7 +11,7 @@ class DataPipeline:
     save_intermediate_steps: bool = field(default=False)
     last_intermediate_step_data: any = field(default=None)
     last_intermediate_step_path: str = field(default=None)
-    
+
     def __post_init__(self):
         if not self.dataset_name:
             self.dataset_name = self._generate_dataset_name()
@@ -23,7 +23,7 @@ class DataPipeline:
             if step.get("name") == "normalization":
                 norm_str = "norm"
                 break
-        
+
         for step in self.steps:
             if step.get("name") == "landmark-detector":
                 detector_str = step.get("model")
@@ -32,7 +32,7 @@ class DataPipeline:
                 else:
                     detector_str = detector_str.lower()
                 break
-        
+
         aug_str = None
         for step in self.steps:
             if step.get("name") == "augmentation":
@@ -41,14 +41,14 @@ class DataPipeline:
                 # Ex: "aug5[rotate,perturb]"
                 aug_str = f"aug{factor}-{'_'.join(methods)}"
                 break
-        
+
         sampler_str = None
         for step in self.steps:
             if step.get("name") == "sampler":
                 factor = step.get("factor")
                 sampler_str = f"sampler{factor}"
                 break
-            
+
         # Exemplo de output: "mp_norm_sampler25_aug5[rotate_finger,perturb_points]"
         parts = [detector_str]
         if norm_str:
@@ -57,9 +57,10 @@ class DataPipeline:
             parts.append(sampler_str)
         if aug_str:
             parts.append(aug_str)
-            
+
         dataset_name = "_".join(parts)
         return dataset_name
+
 
 @dataclass
 class TrainPipeline:
@@ -75,13 +76,21 @@ class TrainPipeline:
     test_dataset: Any = field(default=None)
     len_unique_classes: int = field(default=None)
     models: List[Any] = field(default=None)
-    
+
+
 @dataclass
 class EvaluationPipeline:
-    experiment_path: str
-    test_dataset: Any = field(default=None)
-    models: List[Any] = field(default=None)
+    eval_path: str
+    label_names: str
+    models_path: List[Dict[str, Any]]
+    test_dataset_paths: List[Dict[str, Any]]
+    
+    actual_test_dataset: Any = field(default=None)
+    actual_test_dataset_path: dict = field(default=None)
+    actual_model: Any = field(default=None)
+    actual_model_path: dict = field(default=None)
     len_unique_classes: int = field(default=None)
+
 
 @dataclass
 class Config:

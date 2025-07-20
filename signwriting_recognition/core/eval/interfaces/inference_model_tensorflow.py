@@ -11,6 +11,12 @@ import time
 @dataclass
 class InferenceModelTensorflow(InferenceModel):
     framework: Framework = Framework.TENSORFLOW
+    
+    def __post_init__(self):
+        if str(self.model_path).endswith("keras"):
+            self.model = tf.keras.models.load_model(self.model_path, compile=False)
+        else:
+            self.model = tf.keras.models.load_model(self.model_path, compile=False)
 
     def predict_dataset(self, dataset) -> Dict[str, Any]:
         """

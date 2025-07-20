@@ -104,7 +104,7 @@ def _plot_confusion_matrices(
 
 
 def save_full_report(
-    model_path: Path,
+    report_dir: Path,
     metrics_dict: Dict[str, Any],
     class_names: Sequence[str] | None = None,
 ) -> None:
@@ -126,9 +126,6 @@ def save_full_report(
         throughput=float(metrics_dict["throughput"]),
     )
 
-    report_dir = (
-        Path(model_path) / "reports" / "classification_report"
-    )
     _save_classification_csvs(report_dir, metrics, labels=class_names)
     _plot_confusion_matrices(report_dir, y_true, y_pred, class_names)
 
@@ -147,17 +144,50 @@ def save_full_report(
     logging.info("Relatórios salvos em %s", report_dir)
 
 
-def load_class_names(exp_path: str) -> list[str]:
+def load_class_names(path: str | Path) -> List[str]:
     """
-    Lê <experiment_path>/datasets/test_labels.json  ──►
-    retorna lista ordenada de nomes (índice == id).
+    Procura por **um único** arquivo que termine com `info.json`
+    e devolve a lista de classes ordenada pelo id.
+
+    Argumentos
+    ----------
+    path :  str | Path
+        • diretório onde está o *_info.json
+        • OU o próprio arquivo *.json
+        • OU um pattern com glob (ex.: "/dir/*info.json")
+
+    Retorna
+    -------
+    list[str]  — nomes das classes na ordem do id.
     """
-    json_path = Path(exp_path) / "datasets" / "test_labels.json"
+    path = Path(path)
+
+    if path.is_file():
+        json_path = path
+
+    elif "*" in path.name:
+        matches = list(path.parent.glob(path.name))
+        if len(matches) != 1:
+            raise RuntimeError(
+                f"Esperava 1 arquivo, encontrado(s) {len(matches)} para pattern {path}"
+            )
+        json_path = matches[0]
+
+    elif path.is_dir():
+        matches = list(path.glob("*info.json"))
+        if len(matches) != 1:
+            raise RuntimeError(
+                f"Esperava 1 '*info.json' em {path}, encontrado(s): {matches}"
+            )
+        json_path = matches[0]
+
+    else:
+        raise FileNotFoundError(f"Caminho inexistente: {path}")
+
+    logging.info("Carregando classes de: %s", json_path)
+
     with open(json_path, encoding="utf-8") as f:
-        name_to_id: dict[str, int] = json.load(f)
+        name_to_id: Dict[str, int] = json.load(f)["labels"]
 
-    # ordena por id para alinhar com y_true / y_pred
     id_name_pairs = sorted(name_to_id.items(), key=lambda kv: kv[1])
-    class_names = [name for name, _id in id_name_pairs]
-
-    return class_names
+    return [name for name, _id in id_name_pairs]

@@ -1,11 +1,9 @@
 from core.eval.interfaces.inference_model_tensorflow import InferenceModelTensorflow
 from core.eval.interfaces.inference_model_sklearn import InferenceModelSklearn
+from core.eval.interfaces.inference_model_tflite import InferenceModelTFLite
 from core.eval.interfaces.inference_model import InferenceModel
 from pathlib import Path
-from typing import List
-import tensorflow as tf
 import logging
-import joblib
 
 
 def _find_savedmodel_dir(model_root: Path) -> Path | None:
@@ -24,60 +22,73 @@ def _find_savedmodel_dir(model_root: Path) -> Path | None:
     return None
 
 
-def load_models_from_experiment(experiment_path: str) -> List[InferenceModel]:
+def load_models_from_experiment(models_dir: str | Path) -> InferenceModel | None:
     """
-    Percorre `<experiment_path>/models/<modelo>/` e tenta carregar:
-      • primeiro arquivo *.keras
-      • senão arquivo *.joblib
-      • senão diretório contendo saved_model.pb  (TensorFlow SavedModel)
+    Carrega o primeiro artefato de modelo encontrado em `models_dir`
+    (arquivo ou diretório) na ordem de prioridade:
+        1) *.tflite
+        2) *.keras
+        3) *.joblib
+        4) diretório SavedModel (saved_model.pb)
 
-    Retorna lista de InferenceModel.
+    Retorna a instância de InferenceModel correspondente ou None.
     """
-    models_dir = Path(experiment_path) / "models"
-    if not models_dir.exists():
-        logging.warning("Diretório de modelos não existe: %s", models_dir)
-        return []
+    root = Path(models_dir)
 
-    loaded: List[InferenceModel] = []
+    if not root.exists():
+        logging.warning("Caminho de modelos não existe: %s", root)
+        return None
 
-    for model_root in sorted(models_dir.iterdir()):
-        if not model_root.is_dir():
-            continue
+    if root.is_file():
+        ext = root.suffix.lower()
+        name = root.stem
 
-        keras_files = list(model_root.glob("*.keras"))
-        if keras_files:
-            path = keras_files[0]
-            try:
-                model = tf.keras.models.load_model(path, compile=False)
-                loaded.append(InferenceModelTensorflow(name=model_root.name, model=model))
-                logging.info("Modelo TensorFlow (*.keras) carregado: %s", path)
-                continue
-            except Exception as e:
-                logging.error("Falha ao carregar %s: %s", path, e)
+        try:
+            if ext == ".tflite":
+                logging.info("Carregando modelo TFLite: %s", root)
+                return InferenceModelTFLite(name=name, model_path=root)
 
-        joblib_files = list(model_root.glob("*.joblib"))
-        if joblib_files:
-            path = joblib_files[0]
-            try:
-                model = joblib.load(path)
-                loaded.append(InferenceModelSklearn(name=model_root.name, model=model))
-                logging.info("Modelo sklearn carregado: %s", path)
-                continue
-            except Exception as e:
-                logging.error("Falha ao carregar %s: %s", path, e)
+            if ext == ".keras":
+                logging.info("Carregando modelo Keras: %s", root)
+                return InferenceModelTensorflow(name=name, model_path=root)
 
-        sm_dir = _find_savedmodel_dir(model_root)
-        if sm_dir is not None:
-            try:
-                model = tf.keras.models.load_model(sm_dir, compile=False)
-                loaded.append(InferenceModelTensorflow(name=model_root.name, model=model))
-                logging.info("SavedModel carregado: %s", sm_dir)
-            except Exception as e:
-                logging.error("Falha ao carregar SavedModel em %s: %s", sm_dir, e)
-        else:
-            logging.warning(
-                "Nenhum artefato reconhecido (*.keras, *.joblib, saved_model.pb) em %s",
-                model_root,
-            )
+            if ext == ".joblib":
+                logging.info("Carregando modelo sklearn: %s", root)
+                return InferenceModelSklearn(name=name, model_path=root)
 
-    return loaded
+        except Exception as e:
+            logging.error("Falha ao carregar %s: %s", root, e)
+            return None
+
+        logging.warning("Extensão de arquivo não suportada: %s", root)
+        return None
+
+    # 1) busca artefatos no nível superior
+    priority_patterns = ["*.tflite", "*.keras", "*.joblib"]
+    for pattern in priority_patterns:
+        for file_path in root.glob(pattern):
+            model = load_models_from_experiment(file_path)
+            if model is not None:
+                return model
+
+    # 2) SavedModel: procura saved_model.pb no próprio dir ou em subdirs
+    sm_dir = _find_savedmodel_dir(root)
+    if sm_dir is not None:
+        try:
+            logging.info("SavedModel carregado: %s", sm_dir)
+            return InferenceModelTensorflow(name=sm_dir.parent.name, model_path=sm_dir)
+        except Exception as e:
+            logging.error("Falha ao carregar SavedModel em %s: %s", sm_dir, e)
+
+    # 3) procura recursivamente em subdiretórios por outros artefatos
+    for child in sorted(root.iterdir()):
+        if child.is_dir():
+            model = load_models_from_experiment(child)
+            if model is not None:
+                return model
+
+    logging.warning(
+        "Nenhum artefato reconhecido (*.tflite, *.keras, *.joblib, saved_model.pb) em %s",
+        root,
+    )
+    return None

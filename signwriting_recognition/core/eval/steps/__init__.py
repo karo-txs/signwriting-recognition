@@ -1,4 +1,5 @@
 from core.eval.steps.classification_report.classification_report_handler import ClassificationReportHandler
 from core.eval.steps.load_ready_datasets.load_ready_datasets_handler import LoadReadyDatasetsHandler
+from core.eval.steps.prepare_datasets.prepare_datasets_handler import PrepareDatasetsHandler
 from core.eval.steps.bootstrap_report.bootstrap_report_handler import BootstrapReportHandler
 from core.eval.steps.load_model.load_model_handler import LoadModelHandler

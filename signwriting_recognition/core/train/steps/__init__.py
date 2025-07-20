@@ -2,3 +2,4 @@ from core.train.steps.prepare_datasets.prepare_datasets_handler import PrepareDa
 from core.train.steps.load_ready_datasets.load_ready_datasets_handler import LoadReadyDatasetsHandler
 from core.train.steps.build_model.build_model_handler import BuildModelHandler
 from core.train.steps.train_model.train_model_handler import TrainModelHandler
+from core.train.steps.save_model.save_model_handler import SaveModelHandler

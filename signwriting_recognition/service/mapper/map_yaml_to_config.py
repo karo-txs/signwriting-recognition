@@ -50,7 +50,10 @@ def parse_config(raw_config: Dict[str, Any]) -> Config:
     for params in raw_eval_pipeline:
         eval_pipelines.append(
             EvaluationPipeline(
-                experiment_path=params.get("experiment_path"),
+                eval_path=params.get("eval_path"),
+                label_names=params.get("label_names"),
+                models_path=params.get("models_path"),
+                test_dataset_paths=params.get("test_dataset_paths")
             )
         )
 
