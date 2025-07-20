@@ -22,7 +22,7 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 import tensorflow as tf
 import mediapipe as mp
 
-from service.mapper.map_yaml_to_config import parse_config
+from infra.mapper.map_yaml_to_config import parse_config
 from core.train.train_pipeline import run_train_pipeline
 from core.eval.eval_pipeline import run_eval_pipeline
 from infra.logging.logging_utils import setup_logging
