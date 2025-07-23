@@ -12,9 +12,7 @@ class PrepareDatasetsHandler(AbstractHandler):
     def validate(self, request: TrainPipeline) -> bool:
         return (
             request.train_dataset_paths is not None
-            and request.val_dataset_paths is not None
-            and request.test_dataset_paths is not None
-            and not os.path.isdir(f"{request.experiment_path}/datasets/split/train/")
+            and not os.path.isdir(f"{request.experiment_path}/datasets/train/")
         )
 
     def handle(self, request: TrainPipeline) -> TrainPipeline:
@@ -29,12 +27,13 @@ class PrepareDatasetsHandler(AbstractHandler):
             )
 
             logging.info(f"TrainPipeline: Run PrepareDatasets - Val")
-            folders = [d["path"] for d in request.val_dataset_paths]
-            prepare_dataset(
-                folders=folders,
-                split="val",
-                experiment_path=f"{request.experiment_path}/datasets/",
-                label_names=request.label_names,
-            )
+            if request.val_dataset_paths:
+                folders = [d["path"] for d in request.val_dataset_paths]
+                prepare_dataset(
+                    folders=folders,
+                    split="val",
+                    experiment_path=f"{request.experiment_path}/datasets/",
+                    label_names=request.label_names,
+                )
 
         return super().handle(request)

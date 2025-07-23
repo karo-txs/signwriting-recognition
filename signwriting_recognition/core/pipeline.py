@@ -66,7 +66,6 @@ class DataPipeline:
 class TrainPipeline:
     train_dataset_paths: List[Dict[str, Any]]
     val_dataset_paths: List[Dict[str, Any]]
-    test_dataset_paths: List[Dict[str, Any]]
     label_names: str
     experiment_path: str
     models_params: List[Dict[str, Any]]

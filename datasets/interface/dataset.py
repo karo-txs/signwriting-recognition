@@ -1,11 +1,11 @@
+from typing import Iterable, Optional, Tuple, Union
 from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
-from typing import Optional
+from pathlib import Path
 from tqdm import tqdm
 import requests
 import zipfile
 import kaggle
-import kagglehub
 import shutil
 import os
 
@@ -142,27 +142,81 @@ class Dataset(ABC):
                     shutil.copy2(old_file_path, new_file_path)
 
     def map_classes_to_sign_writing_format_file_name_based(
-        self, source_dir: str, target_dir: str
+        self,
+        source_dir: Union[str, Path, Iterable[Union[str, Path]]],
+        target_dir: Union[str, Path],
+        *,
+        recursive: bool = False,
+        include_extensions: Optional[Tuple[str, ...]] = (
+            ".png",
+            ".jpg",
+            ".jpeg",
+            ".bmp",
+            ".gif",
+            ".tiff",
+            ".webp",
+        ),
+        exclude_extensions: Optional[Tuple[str, ...]] = (".depth.png", ".iseg.png"),
+        not_ignore_exists: bool = True,
     ):
         """
-        Maps classes using filename-based matching for datasets where files are named according to class labels.
+        Copia arquivos para pastas‑classe novas, renomeando-as conforme
+        `self.get_mapper()`.
 
-        Args:
-            source_dir (str): Directory containing the original files.
-            target_dir (str): Directory where the files should be copied.
+        Parâmetros principais
+        ---------------------
+        source_dirs        : Caminho único ou coleção de caminhos de origem.
+        target_dir         : Diretório‑raiz de destino.
+        recursive          : Se True, percorre subdiretórios recursivamente.
+        include_extensions : Apenas arquivos com essas extensões são copiados.
+                            `None` → ignora esse filtro (aceita tudo).
+        exclude_extensions : Extensões a descartar (sobrepõe include).
+                            `None` → não exclui nada.
+        not_ignore_exists  : Se True, aborta se `target_dir` já existir.
         """
-        if os.path.isdir(target_dir):
+        target_dir = Path(target_dir)
+
+        if target_dir.is_dir() and not_ignore_exists:
             print(f"The folder {target_dir} has already been mapped")
             return
 
-        for file_name in os.listdir(source_dir):
-            for old_name, new_name in self.get_mapper().items():
-                if file_name.startswith(old_name):
-                    target_path = os.path.join(target_dir, new_name)
-                    os.makedirs(target_path, exist_ok=True)
+        if isinstance(source_dir, (str, Path)):
+            sources = [Path(source_dir)]
+        else:
+            sources = [Path(p) for p in source_dir]
 
-                    old_file_path = os.path.join(source_dir, file_name)
-                    new_file_path = os.path.join(target_path, file_name)
-                    print(f"Copying {file_name} to {target_path}")
-                    shutil.copy2(old_file_path, new_file_path)
-                    break
+        mapper = self.get_mapper()
+
+        def _is_valid_file(fname: str) -> bool:
+            if exclude_extensions and fname.endswith(exclude_extensions):
+                return False
+            if include_extensions:
+                return fname.lower().endswith(include_extensions)
+            return True
+
+        for src_root in sources:
+            if not src_root.is_dir():
+                print(f"[AVISO] {src_root} não é diretório; ignorando.")
+                continue
+
+            files_iter = (
+                (p for p in src_root.rglob("*") if p.is_file())
+                if recursive
+                else (src_root / f for f in os.listdir(src_root))
+            )
+
+            for src_path in files_iter:
+                file_name = src_path.name
+
+                if not _is_valid_file(file_name):
+                    continue
+
+                for old_name, new_name in mapper.items():
+                    if file_name.startswith(old_name):
+                        dst_class_dir = target_dir / new_name
+                        dst_class_dir.mkdir(parents=True, exist_ok=True)
+
+                        dst_path = dst_class_dir / file_name
+                        print(f"Copying {src_path} → {dst_path}")
+                        shutil.copy2(src_path, dst_path)
+                        break

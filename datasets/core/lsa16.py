@@ -9,7 +9,7 @@ class LSA16(Dataset):
 
     def download(self):
         print(
-            "Erro no download: Não é possível fazer o download do dataset hospedado no Mega. \n" + 
+            "Não é possível fazer o download do dataset hospedado no Mega. \n" + 
             "Baixe o dataset a partir do link <https://mega.nz/#!hcgQUCAT!WtTSPTO6GuXIXs1BuRJDGburN4FRHBAs9EzRfbd2ra4> \n" + 
             "e salve na pasta LSA16/original já descompactado"
         )

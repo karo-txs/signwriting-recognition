@@ -4,6 +4,7 @@ from core.pipeline import TrainPipeline
 from core.dtype import AbstractHandler
 from dataclasses import dataclass
 import logging
+import os
 
 
 @dataclass
@@ -15,8 +16,11 @@ class LoadReadyDatasetsHandler(AbstractHandler):
     def handle(self, request: TrainPipeline) -> TrainPipeline:
         if self.validate(request):
             logging.info(f"TrainPipeline: Run LoadReadyDatasets")
-            request.train_dataset = load_ready_dataset(f"{request.experiment_path}/datasets/split/train")
-            request.val_dataset = load_ready_dataset(f"{request.experiment_path}/datasets/split/val")
+            request.train_dataset = load_ready_dataset(f"{request.experiment_path}/datasets/train")
+            
+            if os.path.isdir(f"{request.experiment_path}/datasets/val"):
+                request.val_dataset = load_ready_dataset(f"{request.experiment_path}/datasets/val")
+                
             request.len_unique_classes, _ = count_unique_classes(request.train_dataset)
 
         return super().handle(request)

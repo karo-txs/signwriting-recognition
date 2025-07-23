@@ -38,7 +38,6 @@ def parse_config(raw_config: Dict[str, Any]) -> Config:
             TrainPipeline(
                 train_dataset_paths=params.get("train_dataset"),
                 val_dataset_paths=params.get("val_dataset"),
-                test_dataset_paths=params.get("test_dataset"),
                 models_params=params.get("models"),
                 experiment_path=params.get("experiment_path"),
                 label_names=params.get("label_names"),
